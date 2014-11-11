@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% block body %}
+  <table style="width:100%" class=playlist-table>
+  <tr>
+    <td>File</td>
+  </tr>
+    {% for filename in playlist %}
+        <tr>
+            <td>{{ filename }}</td>
+        </tr> 
+    {% endfor %}
+  </table>
+  <form action="{{ url_for('add_song') }}" method=post class=add-entry>
+    File:<input type=text size=30 name=file></br>
+    <input type=submit value=Add>
+   </form>
+{% endblock %}

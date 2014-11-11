@@ -1,23 +1,47 @@
 {% extends "layout.html" %}
 {% block body %}
-    <form action="{{ url_for('add_schedule') }}" method=post class=add-entry>
-      <dl>
-        <dt>Day:
-        <dd><input type=text size=30 name=day>
-        <dt>Hour:
-        <dd><input type=text size=30 name=hour>
-        <dt>Minute:
-        <dd><input type=text size=30 name=minute>
-        <dt>Lights On:
-        <dd><input type="checkbox" name=turnon>
-        <dd><input type=submit value=Share>
-      </dl>
+<form action="{{ url_for('delete_schedule') }}" method=post class=add-entry>
+  <table style="width:100%" class=entries>
+  <tr>
+    <th>Day</th>
+    <th>Time</th>
+    <th>Action</th>
+    <th>Del</th>
+  </tr>
+    {% for entry in entries %}
+        <tr>
+            <td>{{ entry.day }}</td>
+            <td>{{ entry.hour }}:{{ entry.minute }}</td>
+            <td>
+                {% if entry.turnon %}Lights On{% endif %}
+                {% if entry.turnoff %}Lights Off{% endif %}
+                {% if entry.startplaylist %}Play Music{% endif %}
+                {% if entry.stopplaylist %}Stop Music{% endif %}
+            </td>
+            <td><button type=submit value={{ entry.id }} name="delete_entry">Del.</button></td>
+        </tr> 
+    {% endfor %}
+  </table>
+  </form>
+  <form action="{{ url_for('add_schedule') }}" method=post class=add-entry>
+    Day:
+        <select name="day">
+            <option value="Sunday">Sun.</option>
+            <option value="Monday">Mon.</option>
+            <option value="Tuesday">Tue.</option>
+            <option value="Wednesday">Wed.</option>
+            <option value="Thursday">Thur.</option>
+            <option value="Friday">Fri.</option>
+            <option value="Saturday">Sat.</option>
+        </select>
+      Time:<input type=text size=10 name=time>
+      Action:
+       <select name="action">
+            <option value="turnon">On</option>
+            <option value="turnoff">Off</option>
+            <option value="startplaylist">Play</option>
+            <option value="stopplaylist">Stop</option>
+        </select>
+      <input type=submit value=Add>
     </form>
-  <ul class=entries>
-  {% for entry in entries %}
-    <li>{{ entry.day }} {{ entry.hour }} {{ entry.minute }} {{ entry.turnon }}
-  {% else %}
-    <li><em>Unbelievable.  No entries here so far</em>
-  {% endfor %}
-  </ul>
 {% endblock %}
