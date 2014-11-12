@@ -13,6 +13,7 @@ th              { background-color: green; color: white; }
 .add-entry dl   { font-weight: bold; }
 .update         { border: 2px solid; padding: 0.8em; }
 .update-button  { text-align: center; }
+.minute-input   { width: 1.5em }
 .schedule-link  { text-align: center; padding: 0.4em; }
 .metanav        { text-align: right; font-size: 0.8em; padding: 0.3em;
                   margin-bottom: 1em; background: #fafafa; }

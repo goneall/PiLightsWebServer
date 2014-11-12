@@ -24,7 +24,6 @@
   </table>
   </form>
   <form action="{{ url_for('add_schedule') }}" method=post class=add-entry>
-    Day:
         <select name="day">
             <option value="Sunday">Sun.</option>
             <option value="Monday">Mon.</option>
@@ -33,10 +32,29 @@
             <option value="Thursday">Thur.</option>
             <option value="Friday">Fri.</option>
             <option value="Saturday">Sat.</option>
+            <option value="Everyday">Every</option>
         </select>
-      Time:<input type=text size=10 name=time>
-      Action:
-       <select name="action">
+        <select name="hour">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+        </select>
+      :
+        <input type="text" class="minute-input" name="minutes" value="00">
+        <select name="ampm">
+            <option value="AM">AM</option>
+            <option value="PM">PM</option>
+        </select>
+        <select name="action">
             <option value="turnon">On</option>
             <option value="turnoff">Off</option>
             <option value="startplaylist">Play</option>

@@ -62,32 +62,37 @@ def updatelights():
 @app.route(app.config['WEB_ROUTE_SCHED'])
 def schedule():
     cursor = g.db.execute('select id, day, hour, minute, turnon, turnoff, startplaylist, stopplaylist from schedule order by id')
+    rows = cursor.fetchall()
     entries = [dict(id=row[0], day=row[1], hour=row[2], minute=row[3], turnon=row[4], turnoff=row[5], 
-                    startplaylist=row[6], stopplaylist=row[7]) for row in cursor.fetchall()]
+                    startplaylist=row[6], stopplaylist=row[7]) for row in rows]
     return render_template('schedule.html', entries=entries)
-
 @app.route(app.config['WEB_ROUTE_MAIN']+'/schedule/add', methods=['POST'])
+
 def add_schedule():
     try:
+        # actions
         action = request.form['action']
         turnon = action == 'turnon'
         turnoff = action == 'turnoff'
         startplaylist = action == 'startplaylist'
         stopplaylist = action == 'stopplaylist'
-        time = '0:0'
-        if ('time' in request.form):
-            time = request.form['time']
-        timep = time.split(':')
-        hour = timep[0]
-        minute = 0
-        if (len(timep) > 1):
-            minute = timep[1]
+        
+        # time
+        hour = int(request.form['hour'])
+        minutes = int(request.form['minutes'])
+        ampm = request.form['ampm']
+        if (ampm == 'PM'):
+            hour = hour + 12
+        if (minutes < 0 or minutes > 59):
+            flash('Minutes must be greater than 0 and less than 59')
+            raise Exception('Invalid minutes')
         g.db.execute('insert into schedule (day, hour, minute, turnon, turnoff, startplaylist, stopplaylist) values (?, ?, ?, ?, ?, ?, ?)',
-                     [request.form['day'], hour, minute, turnon,
+                     [request.form['day'], hour, minutes, turnon,
                       turnoff, startplaylist, stopplaylist])
         flash('Schedule updated')
     except Exception as ex:
         logging.error('Error adding new schedule record: '+ex.message)
+        g.db.rollback()
         flash('Error adding schedule')
     finally:
         g.db.commit()
@@ -96,14 +101,16 @@ def add_schedule():
 @app.route(app.config['WEB_ROUTE_MAIN']+'/schedule/delete', methods=['POST'])
 def delete_schedule():
     schedule_id = int(request.form['delete_entry'])
+    message = ''
     try:
         g.db.execute('delete from schedule where id=?', [schedule_id])
-        flash('Schedule item deleted')
+        message = 'Schedule item deleted'
     except Exception as ex:
         logging.error('Error deleting schedule record '+str(schedule_id)+':'+ ex.message)
-        flash('Error deleting schedule record')
+        message = 'Error deleting schedule record'
     finally:
-        g.db.commit
+        g.db.commit()
+    flash(message)
     return redirect(url_for('schedule'))
         
 @app.route(app.config['WEB_ROUTE_MAIN']+'/playlist')
