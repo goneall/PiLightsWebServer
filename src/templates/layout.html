@@ -2,7 +2,14 @@
 <link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
 <title>Pi Lights</title>
 <div class=page>
-    <h1>Pi Lights</h1>
+    
+    <h1>
+        Pi Lights
+        <a href="{{ url_for('lightstatus') }}">
+            <img src={{ url_for('static', filename='Home.png') }} style="float:right">
+        </a>
+    </h1>
+    
     {% for message in get_flashed_messages() %}
         <div class=flash>{{ message }}</div>
     {% endfor %}

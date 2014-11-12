@@ -1,6 +1,16 @@
+#!/usr/bin/env python
+# Licensed under the Apache 2.0 License
+# Author Gary O'Neall gary@sourceauditor.com
+"""
+Primary web application to control the lightshowPi
+
+Usage: sudo lightsite.py
+Website can be accessed on port 5000
+"""
 from logging import handlers
 import logging
 import sqlite3
+import lightsinterface
 from os import path
 from flask import Flask, render_template, g, request, flash, redirect, url_for
 from contextlib import closing
@@ -61,7 +71,7 @@ def updatelights():
     
 @app.route(app.config['WEB_ROUTE_SCHED'])
 def schedule():
-    cursor = g.db.execute('select id, day, hour, minute, turnon, turnoff, startplaylist, stopplaylist from schedule order by id')
+    cursor = g.db.execute('select id, day, hour, minute, turnon, turnoff, startplaylist, stopplaylist from schedule order by day,hour,minute')
     rows = cursor.fetchall()
     entries = [dict(id=row[0], day=row[1], hour=row[2], minute=row[3], turnon=row[4], turnoff=row[5], 
                     startplaylist=row[6], stopplaylist=row[7]) for row in rows]
@@ -115,14 +125,22 @@ def delete_schedule():
         
 @app.route(app.config['WEB_ROUTE_MAIN']+'/playlist')
 def playlist():
-    current_playlist = ['need to fill in', 'second song.mp3']
+    current_playlist = lightsinterface.getplaylist()
     return render_template('playlist.html', playlist=current_playlist)
 
-@app.route(app.config['WEB_ROUTE_MAIN']+'/playlist/add')
+@app.route(app.config['WEB_ROUTE_MAIN']+'/playlist/add', methods=['POST'])
 def add_song():
     flash('Song Added')
     return redirect(url_for('playlist'))
 
-if __name__ == "__main__":
-    
+@app.route(app.config['WEB_ROUTE_MAIN']+'/playlist/update', methods=['POST'])
+def update_playlist():
+    if ('move_up' in request.form):
+        lightsinterface.playlist_move_up(int(request.form['move_up']))
+    if ('delete_entry' in request.form):
+        lightsinterface.delete_playlist_song(int(request.form['delete_entry']))        
+        flash('Song deleted')
+    return redirect(url_for('playlist'))
+
+if __name__ == "__main__":   
     app.run('0.0.0.0')
