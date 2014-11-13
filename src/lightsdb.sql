@@ -14,6 +14,5 @@ create table playlist (
     id integer primary key autoincrement,
     playorder integer,
     name varchar(32),
-    path varchar(2048),
-    active boolean
+    path varchar(2048)
 );

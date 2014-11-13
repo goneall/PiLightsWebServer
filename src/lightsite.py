@@ -48,7 +48,7 @@ def init_db():
         # Add current playlist
         current_playlist = lightsinterface.getplaylist()
         for song in current_playlist:
-            db.execute('insert into playlist(playorder, name, path, active) values (?, ?, ?, 1)',
+            db.execute('insert into playlist(playorder, name, path) values (?, ?, ?)',
                               [song['playorder'], song['name'], song['path']])
         db.commit()
         
@@ -153,9 +153,36 @@ def get_files_not_in_playlist(playlist):
 
 @app.route(app.config['WEB_ROUTE_PLAYLIST']+'/add', methods=['POST'])
 def add_song():
-    flash('Song Added')
+    if 'add_entry' in request.form:
+        entry_info = request.form['add_entry']
+        entry_parts = entry_info.split('+')
+        dirid = entry_parts[0]
+        pathname = entry_parts[1]
+        name = request.form['name'+str(dirid)]
+        if not name or name == '':
+            name = path.split(pathname)[1]
+        append_playlist(name, pathname)
     return redirect(url_for('playlist'))
 
+def append_playlist(name, path):
+    try:
+        # get the maximum order
+        cursor = g.db.execute('select max(playorder) from playlist')
+        row = cursor.fetchone()
+        next_playorder = 1
+        if (row):
+            next_playorder = row[0] + 1
+        g.db.execute('insert into playlist (playorder, name, path) values (?, ?, ?)', 
+                             [next_playorder, name, path])
+        lightsinterface.update_playlist(get_playlist_db())
+        flash('Song Added')
+    except Exception as ex:
+        logging.error('Error deleting song: '+ex.message)
+        g.db.rollback()
+        flash('Error deleting song')
+    finally:
+        g.db.commit();        
+        
 @app.route(app.config['WEB_ROUTE_PLAYLIST']+'/upload', methods=['POST'])
 def upload_song():
     songfile = request.files['file']
@@ -163,26 +190,10 @@ def upload_song():
         if (songfile.filename.endswith('.mp3')):
             file_path = safe_join(app.config['MUSIC_PATH'], songfile.filename)
             songfile.save(file_path)
-            try:
-                # get the maximum order
-                cursor = g.db.execute('select max(playorder) from playlist where active=1')
-                row = cursor.fetchone()
-                next_playorder = 1
-                if (row):
-                    next_playorder = row[0] + 1
-                name = request.form['name']
-                if (not name or name == ''):
-                    name = path.split(file_path)[1]
-                g.db.execute('insert into playlist (playorder, name, path, active) values (?, ?, ?, 1)', 
-                             [next_playorder, name, file_path])
-                lightsinterface.update_playlist(get_playlist_db())
-                flash('Song Uploaded')
-            except Exception as ex:
-                logging.error('Error deleting song: '+ex.message)
-                g.db.rollback()
-                flash('Error deleting song')
-            finally:
-                g.db.commit();
+            name = request.form['name']
+            if (not name or name == ''):
+                name = path.split(file_path)[1]
+            append_playlist(name, file_path)
         else:   #not mp3 file
             flash('File must be an mp3 file')
     return redirect(url_for('playlist'))
@@ -213,7 +224,7 @@ def delete_song(songid):
 
 def move_song_up(songid):
     # Get the current list
-    cursor = g.db.execute('select id, playorder, name, path from playlist where active=1 order by playorder')
+    cursor = g.db.execute('select id, playorder, name, path from playlist order by playorder')
     rows = cursor.fetchall()
     current_position = -1
     current_row_index = -1
@@ -248,7 +259,7 @@ def move_song_up(songid):
     return get_playlist_db()
 
 def get_playlist_db():
-    cursor = g.db.execute('select id, playorder, name, path from playlist where active=1 order by playorder')
+    cursor = g.db.execute('select id, playorder, name, path from playlist order by playorder')
     rows = cursor.fetchall()
     return [dict(id=row[0], playorder=row[1], name=row[2], path=row[3]) for row in rows]
 

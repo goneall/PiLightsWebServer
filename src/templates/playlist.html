@@ -38,8 +38,8 @@
         {% for entry in directory %}
             <tr>
                 <td>{{ entry.path }}</td>
-                <td><input type="text" name="name{{ entry.id }}" size=18>
-                <td><button type=submit value={{ entry.id }} name="add_entry">Add</button></td>
+                <td><input type="text" name="name{{ entry.id }}" size=10>
+                <td><button type=submit value="{{ entry.id }}+{{ entry.path }}" name="add_entry">Add</button></td>
             </tr> 
         {% endfor %}
     </table>
