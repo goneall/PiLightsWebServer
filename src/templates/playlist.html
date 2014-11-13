@@ -11,14 +11,14 @@
         <tr>
             <th>N</th>
             <th>Name</th>
-            <th style="fill">File Path</th>
+            <th style="fill">File Name</th>
             <th>Del</th>
         </tr>
         {% for entry in playlist %}
             <tr>
                 <td><button type=submit value={{ entry.id }} name="move_up">&#94;</button></td>
                 <td>{{ entry.name }}</td>
-                <td>{{ entry.path }}</td>
+                <td>{{ entry.filename }}</td>
                 <td><button type=submit value={{ entry.id }} name="delete_entry">Del.</button></td>
             </tr> 
         {% endfor %}
@@ -31,15 +31,15 @@
         <col style="width:40%">
         <col style="width:10%">
         <tr>
-            <th>File Path</th>
+            <th>File Name</th>
             <th>Name</th>
             <th>Add</th>
         </tr>
         {% for entry in directory %}
             <tr>
-                <td>{{ entry.path }}</td>
+                <td>{{ entry.filename }}</td>
                 <td><input type="text" name="name{{ entry.id }}" size=10>
-                <td><button type=submit value="{{ entry.id }}+{{ entry.path }}" name="add_entry">Add</button></td>
+                <td><button type=submit value="{{ entry.id }}+{{ entry.filename }}" name="add_entry">Add</button></td>
             </tr> 
         {% endfor %}
     </table>

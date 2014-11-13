@@ -147,7 +147,7 @@ def get_files_not_in_playlist(playlist):
         if songfile.endswith('.mp3'):
             songfilepath = path.join(app.config['MUSIC_PATH'],songfile)
             if not songfilepath in playlist_files:
-                retval.append(dict(id=songnum, path=songfilepath))
+                retval.append(dict(id=songnum, filename=songfile))
                 songnum = songnum + 1
     return retval
 
@@ -157,7 +157,7 @@ def add_song():
         entry_info = request.form['add_entry']
         entry_parts = entry_info.split('+')
         dirid = entry_parts[0]
-        pathname = entry_parts[1]
+        pathname = safe_join(app.config['MUSIC_PATH'],entry_parts[1])
         name = request.form['name'+str(dirid)]
         if not name or name == '':
             name = path.split(pathname)[1]
@@ -261,7 +261,7 @@ def move_song_up(songid):
 def get_playlist_db():
     cursor = g.db.execute('select id, playorder, name, path from playlist order by playorder')
     rows = cursor.fetchall()
-    return [dict(id=row[0], playorder=row[1], name=row[2], path=row[3]) for row in rows]
+    return [dict(id=row[0], playorder=row[1], name=row[2], path=row[3], filename=path.split(row[3])[1]) for row in rows]
 
 
 if __name__ == "__main__":   
