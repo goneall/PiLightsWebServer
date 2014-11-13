@@ -5,6 +5,7 @@ h1              { border-bottom: 2px solid #eee; }
 h2              { font-size: 1.2em; }
 table           { border-collapse: collapse; margin: .2em 0em; width 100%; }
 table, th, td   { border: .15em solid black; }
+td              { word-wrap:break-all }
 th              { background-color: green; color: white; }
 
 .page           { margin: 2em auto; width: 20em; border: 5px solid #ccc;
@@ -15,6 +16,8 @@ th              { background-color: green; color: white; }
 .update-button  { text-align: center; }
 .minute-input   { width: 1.5em }
 .schedule-link  { text-align: center; padding: 0.4em; }
+.upload-file    { border: 1px solid; padding: 0.2em }
+.directory-table td { word-wrap:break-all }
 .metanav        { text-align: right; font-size: 0.8em; padding: 0.3em;
                   margin-bottom: 1em; background: #fafafa; }
 .flash          { background: #cee5F5; padding: 0.5em;

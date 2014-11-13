@@ -1,8 +1,8 @@
 {% extends "layout.html" %}
 {% block body %}
 
-
-  <form action="{{ url_for('update_playlist') }}" method=post class=add-entry>
+<h2>Current Playlist</h2>
+  <form action="{{ url_for('update_playlist') }}" method=post>
     <table style="width:100%" class=playlist-table>
         <col style="width:10%">
         <col style="width:30%">
@@ -24,9 +24,28 @@
         {% endfor %}
     </table>
   </form>
-  <form action="{{ url_for('add_song') }}" method=post class=add-entry>
-    Path:<input type="file" name=path><br/>
-    Order:<input type=text size=2 name=order>Name:<input type=text size=14 name=name>  
-    <input type=submit value=Add>
-   </form>
+  <h2>Available Files</h2>
+  <form action="{{ url_for('add_song') }}" method=post>
+  <table style="width:100%; table-layout=fixed" class=directory-table>
+        <col style="width:50%">
+        <col style="width:40%">
+        <col style="width:10%">
+        <tr>
+            <th>File Path</th>
+            <th>Name</th>
+            <th>Add</th>
+        </tr>
+        {% for entry in directory %}
+            <tr>
+                <td>{{ entry.path }}</td>
+                <td><input type="text" name="name{{ entry.id }}" size=18>
+                <td><button type=submit value={{ entry.id }} name="add_entry">Add</button></td>
+            </tr> 
+        {% endfor %}
+    </table>
+  </form>
+    <form action="{{ url_for('upload_song') }}" method=post class=upload-file enctype=multipart/form-data>
+        <input type="file" size=5 name=file><br/>
+        Name: <input type=text size=23 name=name>  <input type=submit value=Upload>   
+    </form>
 {% endblock %}

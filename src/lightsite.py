@@ -11,15 +11,18 @@ from logging import handlers
 import logging
 import sqlite3
 import lightsinterface
-from os import path
+from os import path, listdir
 from flask import Flask, render_template, g, request, flash, redirect, url_for
+from werkzeug.security import safe_join
 from contextlib import closing
 # Configuration
 #LOGFILE_NAME = '/var/log/lightsite/lightsite.log'
 LOGFILE_NAME = 'lightsite.log'
 WEB_ROUTE_MAIN = '/lights'    # Web routing to the light site application
 WEB_ROUTE_SCHED = WEB_ROUTE_MAIN + '/schedule'  # Web routing to the schedule app
+WEB_ROUTE_PLAYLIST = WEB_ROUTE_MAIN + '/playlist'   # Web routing to the playlist app
 DATABASE = 'db'
+MUSIC_PATH = 'music'  # Path to music directory
 DEBUG = True
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -42,7 +45,13 @@ def init_db():
         with app.open_resource('lightsdb.sql', mode='r') as f:
             db.cursor().executescript(f.read())
         db.commit()
-
+        # Add current playlist
+        current_playlist = lightsinterface.getplaylist()
+        for song in current_playlist:
+            db.execute('insert into playlist(playorder, name, path, active) values (?, ?, ?, 1)',
+                              [song['playorder'], song['name'], song['path']])
+        db.commit()
+        
 @app.before_request
 def before_request():
     if (not path.isfile(app.config['DATABASE'])):
@@ -62,11 +71,11 @@ def lightstatus():
 @app.route(app.config['WEB_ROUTE_MAIN'] + '/update', methods=['POST'])
 def updatelights():
     if (request.form['lightstatus'] == u'lightson'):
-        lightson = True # replace with call to library
+        lightsinterface.lights_on()
     elif (request.form['lightstatus'] == u'playliston'):
-        playliston = True
+        lightsinterface.start_playlist()
     else:
-        alloff = True
+        lightsinterface.lights_off()
     return redirect(url_for('lightstatus'))
     
 @app.route(app.config['WEB_ROUTE_SCHED'])
@@ -76,8 +85,8 @@ def schedule():
     entries = [dict(id=row[0], day=row[1], hour=row[2], minute=row[3], turnon=row[4], turnoff=row[5], 
                     startplaylist=row[6], stopplaylist=row[7]) for row in rows]
     return render_template('schedule.html', entries=entries)
-@app.route(app.config['WEB_ROUTE_MAIN']+'/schedule/add', methods=['POST'])
 
+@app.route(app.config['WEB_ROUTE_SCHED']+'/add', methods=['POST'])
 def add_schedule():
     try:
         # actions
@@ -108,7 +117,7 @@ def add_schedule():
         g.db.commit()
     return redirect(url_for('schedule'))
 
-@app.route(app.config['WEB_ROUTE_MAIN']+'/schedule/delete', methods=['POST'])
+@app.route(app.config['WEB_ROUTE_SCHED']+'/delete', methods=['POST'])
 def delete_schedule():
     schedule_id = int(request.form['delete_entry'])
     message = ''
@@ -123,24 +132,126 @@ def delete_schedule():
     flash(message)
     return redirect(url_for('schedule'))
         
-@app.route(app.config['WEB_ROUTE_MAIN']+'/playlist')
+@app.route(app.config['WEB_ROUTE_PLAYLIST'])
 def playlist():
-    current_playlist = lightsinterface.getplaylist()
-    return render_template('playlist.html', playlist=current_playlist)
+    playlist = get_playlist_db()
+    directory = get_files_not_in_playlist(playlist)
+    return render_template('playlist.html', playlist=playlist, directory=directory)
 
-@app.route(app.config['WEB_ROUTE_MAIN']+'/playlist/add', methods=['POST'])
+def get_files_not_in_playlist(playlist):
+    retval = []
+    playlist_files = [playlist_item['path'] for playlist_item in playlist]
+    song_files = listdir(app.config['MUSIC_PATH'])
+    songnum = 0
+    for songfile in song_files:
+        if songfile.endswith('.mp3'):
+            songfilepath = path.join(app.config['MUSIC_PATH'],songfile)
+            if not songfilepath in playlist_files:
+                retval.append(dict(id=songnum, path=songfilepath))
+                songnum = songnum + 1
+    return retval
+
+@app.route(app.config['WEB_ROUTE_PLAYLIST']+'/add', methods=['POST'])
 def add_song():
     flash('Song Added')
     return redirect(url_for('playlist'))
 
-@app.route(app.config['WEB_ROUTE_MAIN']+'/playlist/update', methods=['POST'])
-def update_playlist():
-    if ('move_up' in request.form):
-        lightsinterface.playlist_move_up(int(request.form['move_up']))
-    if ('delete_entry' in request.form):
-        lightsinterface.delete_playlist_song(int(request.form['delete_entry']))        
-        flash('Song deleted')
+@app.route(app.config['WEB_ROUTE_PLAYLIST']+'/upload', methods=['POST'])
+def upload_song():
+    songfile = request.files['file']
+    if (songfile):
+        if (songfile.filename.endswith('.mp3')):
+            file_path = safe_join(app.config['MUSIC_PATH'], songfile.filename)
+            songfile.save(file_path)
+            try:
+                # get the maximum order
+                cursor = g.db.execute('select max(playorder) from playlist where active=1')
+                row = cursor.fetchone()
+                next_playorder = 1
+                if (row):
+                    next_playorder = row[0] + 1
+                name = request.form['name']
+                if (not name or name == ''):
+                    name = path.split(file_path)[1]
+                g.db.execute('insert into playlist (playorder, name, path, active) values (?, ?, ?, 1)', 
+                             [next_playorder, name, file_path])
+                lightsinterface.update_playlist(get_playlist_db())
+                flash('Song Uploaded')
+            except Exception as ex:
+                logging.error('Error deleting song: '+ex.message)
+                g.db.rollback()
+                flash('Error deleting song')
+            finally:
+                g.db.commit();
+        else:   #not mp3 file
+            flash('File must be an mp3 file')
     return redirect(url_for('playlist'))
+
+@app.route(app.config['WEB_ROUTE_PLAYLIST']+'/update', methods=['POST'])
+def update_playlist():
+    updated_playlist = None
+    if ('move_up' in request.form):
+        songid = int(request.form['move_up'])
+        updated_playlist = move_song_up(songid)
+    if ('delete_entry' in request.form):
+        songid = int(request.form['delete_entry'])
+        updated_playlist = delete_song(songid)  
+        flash('Song deleted')
+    lightsinterface.update_playlist(updated_playlist)
+    return redirect(url_for('playlist'))
+
+def delete_song(songid):
+    try:
+        g.db.execute('delete from playlist where id=?', [songid])
+    except Exception as ex:
+        logging.error('Error deleting song: '+ex.message)
+        g.db.rollback()
+        flash('Error deleting song')
+    finally:
+        g.db.commit();
+    return get_playlist_db()
+
+def move_song_up(songid):
+    # Get the current list
+    cursor = g.db.execute('select id, playorder, name, path from playlist where active=1 order by playorder')
+    rows = cursor.fetchall()
+    current_position = -1
+    current_row_index = -1
+    min_position = 9999
+    max_position = -1
+    rowcounter = 0
+    for row in rows:    # get the positions
+        if (row[1] < min_position):
+            min_position = row[1]
+        if (row[1] > max_position):
+            max_position = row[1]
+        if (row[0] == songid):
+            current_position = row[1]
+            current_row_index = rowcounter
+        rowcounter = rowcounter + 1
+    try:
+        if (current_position == min_position):
+            # roll around to the max position - this also works for a list of one song
+            for i in range(1, len(rows)):
+                g.db.execute('update playlist set playorder=? where id=?', [i-1, rows[i][0]])
+            g.db.execute('update playlist set playorder=? where id=?', [len(rows), rows[0][0]])
+        else:
+            # Swap entries
+            g.db.execute('update playlist set playorder=? where id=?', [rows[current_row_index][1], rows[current_row_index-1][0]])
+            g.db.execute('update playlist set playorder=? where id=?', [rows[current_row_index-1][1], rows[current_row_index][0]])
+    except Exception as ex:
+        logging.error('Error changing playlist order: '+ex.message)
+        g.db.rollback()
+        flash('Error moving song')
+    finally:
+        g.db.commit();
+    return get_playlist_db()
+
+def get_playlist_db():
+    cursor = g.db.execute('select id, playorder, name, path from playlist where active=1 order by playorder')
+    rows = cursor.fetchall()
+    return [dict(id=row[0], playorder=row[1], name=row[2], path=row[3]) for row in rows]
+
 
 if __name__ == "__main__":   
     app.run('0.0.0.0')
