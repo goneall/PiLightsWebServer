@@ -6,6 +6,7 @@ Primary web application to control the lightshowPi
 
 Usage: sudo lightsite.py
 Website can be accessed on port 5000
+The file also contains the default configuration parameters
 """
 from logging import handlers
 import logging
@@ -18,18 +19,17 @@ from werkzeug.security import safe_join
 from contextlib import closing
 # Configuration
 LOGFILE_NAME = '/var/log/lightsite/lightsite.log'
-#LOGFILE_NAME = 'lightsite.log'
 PORT = 5000
 WEB_ROUTE_MAIN = '/lights'    # Web routing to the light site application
 WEB_ROUTE_SCHED = WEB_ROUTE_MAIN + '/schedule'  # Web routing to the schedule app
 WEB_ROUTE_PLAYLIST = WEB_ROUTE_MAIN + '/playlist'   # Web routing to the playlist app
 DATABASE = 'db'
 MUSIC_PATH = '/home/pi/music'  # Path to music directory
-#MUSIC_PATH = 'music'  # Path to music directory
 DEBUG = True
 
 app = Flask(__name__)
 app.config.from_object(__name__)
+app.config.from_envvar('PILIGHTSWEB_SETTINGS')
 app.secret_key = '\xf4\x9a\x8f\x08\xd6\xedg\xe4W1f\x87\x1a\x9al\xfa\x90\xb2!"R0b\x10'
 
 app.debug=app.config['DEBUG']
@@ -103,18 +103,9 @@ def logout():
     flash('You are logged out')
     return redirect(url_for('lightstatus'))
 
-def add_user(username, password):
-    before_request()
-    try:
-        cursor = g.db.execute('select password from users where username=?', [username.strip()])
-        row = cursor.fetchone()
-    finally:
-        g.db.commit()
-        teardown_request()
-
 @app.route(app.config['WEB_ROUTE_MAIN'])
 def lightstatus():
-    return render_template('lightsite.html', lightson=False, playliston=True)
+    return render_template('lightsite.html', lightson=lightsinterface.lights_are_on, playliston=lightsinterface.playlist_playing)
 
 @app.route(app.config['WEB_ROUTE_MAIN'] + '/update', methods=['POST'])
 def updatelights():
