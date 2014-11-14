@@ -12,18 +12,22 @@ import logging
 import sqlite3
 import lightsinterface
 from os import path, listdir
-from flask import Flask, render_template, g, request, flash, redirect, url_for
+from hashlib import sha256
+from flask import Flask, render_template, g, request, flash, redirect, url_for, session
 from werkzeug.security import safe_join
 from contextlib import closing
 # Configuration
-LOGFILE_NAME = '/var/log/lightsite/lightsite.log'
-#LOGFILE_NAME = 'lightsite.log'
+#LOGFILE_NAME = '/var/log/lightsite/lightsite.log'
+LOGFILE_NAME = 'lightsite.log'
+PORT = 5000
 WEB_ROUTE_MAIN = '/lights'    # Web routing to the light site application
 WEB_ROUTE_SCHED = WEB_ROUTE_MAIN + '/schedule'  # Web routing to the schedule app
 WEB_ROUTE_PLAYLIST = WEB_ROUTE_MAIN + '/playlist'   # Web routing to the playlist app
 DATABASE = 'db'
-MUSIC_PATH = '/home/pi/music'  # Path to music directory
+#MUSIC_PATH = '/home/pi/music'  # Path to music directory
+MUSIC_PATH = 'music'  # Path to music directory
 DEBUG = True
+
 app = Flask(__name__)
 app.config.from_object(__name__)
 app.secret_key = '\xf4\x9a\x8f\x08\xd6\xedg\xe4W1f\x87\x1a\x9al\xfa\x90\xb2!"R0b\x10'
@@ -50,6 +54,10 @@ def init_db():
         for song in current_playlist:
             db.execute('insert into playlist(playorder, name, path) values (?, ?, ?)',
                               [song['playorder'], song['name'], song['path']])
+        # Add one user
+        password_hash = sha256('password')
+        password_digest = password_hash.hexdigest()
+        db.execute('insert into users(username, password) values (?, ?)', ['gary', password_digest])
         db.commit()
         
 @app.before_request
@@ -63,6 +71,46 @@ def teardown_request(exception):
     db = getattr(g, 'db', None)
     if db is not None:
         db.close()
+
+@app.route(app.config['WEB_ROUTE_MAIN']+'/login', methods=['GET', 'POST'])
+def login():
+    error = None
+    if request.method == 'POST':
+        username = request.form['username']
+        if username and username.strip() != '':
+            cursor = g.db.execute('select password from users where username=?', [username.strip()])
+            row = cursor.fetchone()
+            if row:
+                passwordstr = request.form['password']
+                password_hash = sha256(passwordstr)
+                if row[0] == password_hash.hexdigest():
+                    session['logged_in'] = True
+                    flash('You are logged in')
+                else:
+                    error = 'Invalid password'
+            else:
+                error = 'Username does not exist'
+        else:
+            error = 'Must provide a username'
+    if error or request.method == 'GET':
+        return render_template('login.html', error=error)
+    else:
+        return redirect(url_for('lightstatus'))
+
+@app.route(app.config['WEB_ROUTE_MAIN']+'/logout')
+def logout():
+    session.pop('logged_in', None)
+    flash('You are logged out')
+    return redirect(url_for('lightstatus'))
+
+def add_user(username, password):
+    before_request()
+    try:
+        cursor = g.db.execute('select password from users where username=?', [username.strip()])
+        row = cursor.fetchone()
+    finally:
+        g.db.commit()
+        teardown_request()
 
 @app.route(app.config['WEB_ROUTE_MAIN'])
 def lightstatus():
@@ -110,7 +158,7 @@ def add_schedule():
                       turnoff, startplaylist, stopplaylist])
         flash('Schedule updated')
     except Exception as ex:
-        logging.error('Error adding new schedule record: '+ex.message)
+        logging.error('Error adding new schedule record: '+str(ex))
         g.db.rollback()
         flash('Error adding schedule')
     finally:
@@ -125,7 +173,7 @@ def delete_schedule():
         g.db.execute('delete from schedule where id=?', [schedule_id])
         message = 'Schedule item deleted'
     except Exception as ex:
-        logging.error('Error deleting schedule record '+str(schedule_id)+':'+ ex.message)
+        logging.error('Error deleting schedule record '+str(schedule_id)+':'+ str(ex))
         message = 'Error deleting schedule record'
     finally:
         g.db.commit()
@@ -177,7 +225,7 @@ def append_playlist(name, path):
         lightsinterface.update_playlist(get_playlist_db())
         flash('Song Added')
     except Exception as ex:
-        logging.error('Error deleting song: '+ex.message)
+        logging.error('Error deleting song: '+str(ex))
         g.db.rollback()
         flash('Error deleting song')
     finally:
@@ -215,7 +263,7 @@ def delete_song(songid):
     try:
         g.db.execute('delete from playlist where id=?', [songid])
     except Exception as ex:
-        logging.error('Error deleting song: '+ex.message)
+        logging.error('Error deleting song: '+str(ex))
         g.db.rollback()
         flash('Error deleting song')
     finally:
@@ -251,7 +299,7 @@ def move_song_up(songid):
             g.db.execute('update playlist set playorder=? where id=?', [rows[current_row_index][1], rows[current_row_index-1][0]])
             g.db.execute('update playlist set playorder=? where id=?', [rows[current_row_index-1][1], rows[current_row_index][0]])
     except Exception as ex:
-        logging.error('Error changing playlist order: '+ex.message)
+        logging.error('Error changing playlist order: '+str(ex))
         g.db.rollback()
         flash('Error moving song')
     finally:
@@ -265,4 +313,4 @@ def get_playlist_db():
 
 
 if __name__ == "__main__":   
-    app.run('0.0.0.0')
+    app.run('0.0.0.0', port=app.config['PORT'])

@@ -6,7 +6,9 @@
     <th>Day</th>
     <th>Time</th>
     <th>Action</th>
-    <th>Del</th>
+    {% if session.logged_in %}
+        <th>Del</th>
+    {% endif %}
   </tr>
     {% for entry in entries %}
         <tr>
@@ -18,12 +20,15 @@
                 {% if entry.startplaylist %}Play Music{% endif %}
                 {% if entry.stopplaylist %}Stop Music{% endif %}
             </td>
-            <td><button type=submit value={{ entry.id }} name="delete_entry">Del.</button></td>
+            {% if session.logged_in %}
+                <td><button type=submit value={{ entry.id }} name="delete_entry">Del.</button></td>
+            {% endif %}
         </tr> 
     {% endfor %}
   </table>
   </form>
-  <form action="{{ url_for('add_schedule') }}" method=post class=add-entry>
+  {% if session.logged_in %}
+    <form action="{{ url_for('add_schedule') }}" method=post class=add-entry>
         <select name="day">
             <option value="Sunday">Sun.</option>
             <option value="Monday">Mon.</option>
@@ -62,4 +67,5 @@
         </select>
       <input type=submit value=Add>
     </form>
+ {% endif %}
 {% endblock %}

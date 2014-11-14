@@ -16,3 +16,9 @@ create table playlist (
     name varchar(32),
     path varchar(2048)
 );
+drop table if exists users;
+create table users (
+    id integer primary key autoincrement,
+    username varchar(256),
+    password varchar(256)
+);

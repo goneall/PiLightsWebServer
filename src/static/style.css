@@ -12,6 +12,10 @@ th              { background-color: green; color: white; }
                   padding: 0.8em; background: white; }
 .add-entry      { font-size: 0.9em; border-bottom: 1px solid #ccc; }
 .add-entry dl   { font-weight: bold; }
+
+.entries table, th, td { border: .15em solid black; }
+th.login, table.login, td.login { border: none; }
+.login-submit   { text-align: center; padding: 0.4em; }
 .update         { border: 2px solid; padding: 0.8em; }
 .update-button  { text-align: center; }
 .minute-input   { width: 1.5em }

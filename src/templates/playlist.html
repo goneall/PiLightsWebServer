@@ -4,29 +4,42 @@
 <h2>Current Playlist</h2>
   <form action="{{ url_for('update_playlist') }}" method=post>
     <table style="width:100%" class=playlist-table>
-        <col style="width:10%">
+        {% if session.logged_in %}
+            <col style="width:10%">
+        {% endif %}
         <col style="width:30%">
         <col style="width:50%">
-        <col style="width:10%">
+        {% if session.logged_in %}
+            <col style="width:10%">
+        {% endif %}
         <tr>
-            <th>N</th>
+            {% if session.logged_in %}
+                <th>N</th>
+            {% endif %}
             <th>Name</th>
             <th style="fill">File Name</th>
-            <th>Del</th>
+            {% if session.logged_in %}
+                <th>Del</th>
+            {% endif %}
         </tr>
         {% for entry in playlist %}
             <tr>
-                <td><button type=submit value={{ entry.id }} name="move_up">&#94;</button></td>
+                {% if session.logged_in %}
+                    <td><button type=submit value={{ entry.id }} name="move_up">&#94;</button></td>
+                {% endif %}
                 <td>{{ entry.name }}</td>
                 <td>{{ entry.filename }}</td>
-                <td><button type=submit value={{ entry.id }} name="delete_entry">Del.</button></td>
+                {% if session.logged_in %}
+                    <td><button type=submit value={{ entry.id }} name="delete_entry">Del.</button></td>
+                {% endif %}
             </tr> 
         {% endfor %}
     </table>
   </form>
-  <h2>Available Files</h2>
-  <form action="{{ url_for('add_song') }}" method=post>
-  <table style="width:100%; table-layout=fixed" class=directory-table>
+  {% if session.logged_in %}
+    <h2>Available Files</h2>
+    <form action="{{ url_for('add_song') }}" method=post>
+      <table style="width:100%; table-layout=fixed" class=directory-table>
         <col style="width:50%">
         <col style="width:40%">
         <col style="width:10%">
@@ -42,10 +55,11 @@
                 <td><button type=submit value="{{ entry.id }}+{{ entry.filename }}" name="add_entry">Add</button></td>
             </tr> 
         {% endfor %}
-    </table>
-  </form>
+      </table>
+    </form>
     <form action="{{ url_for('upload_song') }}" method=post class=upload-file enctype=multipart/form-data>
         <input type="file" size=5 name=file><br/>
         Name: <input type=text size=23 name=name>  <input type=submit value=Upload>   
     </form>
+ {% endif %}
 {% endblock %}

@@ -17,7 +17,9 @@
             <input type="radio" name="lightstatus" value="lightsoff" checked="checked">Lights Off<br>       
         {% endif %}
     {% endif %}
-    <div class=update-button><input type=submit value=Update>    </div>          
+    {% if session.logged_in %}
+        <div class=update-button><input type=submit value=Update>    </div> 
+    {% endif %}         
 </form>
 <div class=schedule-link>
     <a href="{{ url_for('schedule') }}">View and Update Schedule</a><br/>
