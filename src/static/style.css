@@ -13,7 +13,6 @@ th              { background-color: green; color: white; }
 .add-entry      { font-size: 0.9em; border-bottom: 1px solid #ccc; }
 .add-entry dl   { font-weight: bold; }
 
-.entries table, th, td { border: .15em solid black; }
 th.login, table.login, td.login { border: none; }
 .login-submit   { text-align: center; padding: 0.4em; }
 .update         { border: 2px solid; padding: 0.8em; }
@@ -21,7 +20,6 @@ th.login, table.login, td.login { border: none; }
 .minute-input   { width: 1.5em }
 .schedule-link  { text-align: center; padding: 0.4em; }
 .upload-file    { border: 1px solid; padding: 0.2em }
-.directory-table td { word-wrap:break-all }
 .metanav        { text-align: right; font-size: 0.8em; padding: 0.3em;
                   margin-bottom: 1em; background: #fafafa; }
 .flash          { background: #cee5F5; padding: 0.5em;
