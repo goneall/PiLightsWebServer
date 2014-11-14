@@ -17,15 +17,15 @@ from flask import Flask, render_template, g, request, flash, redirect, url_for, 
 from werkzeug.security import safe_join
 from contextlib import closing
 # Configuration
-#LOGFILE_NAME = '/var/log/lightsite/lightsite.log'
-LOGFILE_NAME = 'lightsite.log'
+LOGFILE_NAME = '/var/log/lightsite/lightsite.log'
+#LOGFILE_NAME = 'lightsite.log'
 PORT = 5000
 WEB_ROUTE_MAIN = '/lights'    # Web routing to the light site application
 WEB_ROUTE_SCHED = WEB_ROUTE_MAIN + '/schedule'  # Web routing to the schedule app
 WEB_ROUTE_PLAYLIST = WEB_ROUTE_MAIN + '/playlist'   # Web routing to the playlist app
 DATABASE = 'db'
-#MUSIC_PATH = '/home/pi/music'  # Path to music directory
-MUSIC_PATH = 'music'  # Path to music directory
+MUSIC_PATH = '/home/pi/music'  # Path to music directory
+#MUSIC_PATH = 'music'  # Path to music directory
 DEBUG = True
 
 app = Flask(__name__)

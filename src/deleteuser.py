@@ -12,7 +12,7 @@ import sqlite3
 from hashlib import sha256
 from os import path
 
-DB_PATH = 'src/db'
+DB_PATH = 'db'
 
 def usage():
     ''' Prints the usage to the console
