@@ -7,6 +7,7 @@ Licensed under the Apache 2.0 License
 Interface module for the lightshowPi
 Currently, these are just stubs used to test the web interface
 '''
+import subprocess
 from configuration_manager import songs, set_songs
 from hardware_controller import turn_on_lights, turn_off_lights, initialize
 
