@@ -1,3 +1,4 @@
+#container	{ width: 100% }
 body            { font-family: sans-serif; background: #eee; }
 a, h1, h2       { color: #377ba8; }
 h1, h2          { font-family: 'Georgia', serif; margin: 0; }
