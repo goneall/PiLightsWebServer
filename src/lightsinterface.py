@@ -9,11 +9,14 @@ Currently, these are just stubs used to test the web interface
 '''
 import subprocess
 from configuration_manager import songs, set_songs
-from hardware_controller import turn_on_lights, turn_off_lights, initialize
+from hardware_controller import turn_on_lights, turn_off_lights, initialize, clean_up
+from os import path
+import sys
 
 lights_are_on = False
 playlist_playing = False
 initialized = False
+playing_process = None
 
 def getplaylist():
     current_songs = songs()
@@ -59,25 +62,47 @@ def lights_off():
     lights_are_on = False
 
 def start_playlist():
-    global lights_are_on, playlist_playing
+    global lights_are_on, playlist_playing, playing_process
     initialize_interface()
     if lights_are_on:
         lights_off()
-    #TODO: Implement
-    
-    
+    if playing_process:
+        playing_process.kill()
+        playing_process = None
+    args = [path.expandvars('$SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py'), '--playlist']
+    playing_process = subprocess.Popen(args)
+    playlist_playing = True
+   
 def stop_playlist():
-    global lights_are_on, playlist_playing
+    global lights_are_on, playlist_playing, playing_process
     initialize_interface()
     if lights_are_on:
         lights_off()
+    if playing_process:
+        playing_process.kill()
+    playlist_playing = False
         
 def initialize_interface():
     global initialized
     if not initialized:
         initialize()
         initialized = True
-    #TODO: Implement
+        
+def cleanup():
+    global initialized
+    clean_up()
+    initialized = False
     
 if __name__ == "__main__":
-    print 'This module intefaces to the lightshowpi modules'
+    if len(sys.argv) < 2:
+        print 'This module intefaces to the lightshowpi modules'
+    elif sys.argv[1].strip() == '--lightson':
+        lights_on()
+    elif sys.argv[1].strip() == '--lightsoff':
+        lights_off()
+    elif sys.argv[1].strip() == '--startplaylist':
+        start_playlist()
+    elif sys.argv[1].strip() == '--stopplaylist':
+        stop_playlist()
+    else:
+        print 'Invalid argument.  Expected --lightson, --lightsoff, --startplaylist, or --stopplaylist'
