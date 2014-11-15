@@ -107,7 +107,6 @@ def logout():
 def lightstatus():
     return render_template('lightsite.html', lightson=lightsinterface.lights_are_on, playliston=lightsinterface.playlist_playing)
 
-
 @app.route(app.config['WEB_ROUTE_MAIN'] + '/update', methods=['POST'])
 def updatelights():
     if (request.form['lightstatus'] == u'lightson'):
