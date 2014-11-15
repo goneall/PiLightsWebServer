@@ -3,6 +3,8 @@
 '''
 Add a user to the database
 Usage: adduser username password
+The environment variable LIGHTS_WEB_DATABASE must be set to the path of the database
+
 Created on Nov 13, 2014
 
 @author: Gary O'Neall
@@ -12,7 +14,7 @@ import sqlite3
 from hashlib import sha256
 from os import path
 
-DB_PATH = 'src/db'
+DB_PATH = path.expandvars('$LIGHTS_WEB_DATABASE')
 
 def usage():
     ''' Pprints the usage to the console

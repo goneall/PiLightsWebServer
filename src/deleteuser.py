@@ -3,6 +3,8 @@
 '''
 Deletes a user from the database
 Usage: deleteuser username
+The environment variable LIGHTS_WEB_DATABASE must be set to the path of the database
+
 Created on Nov 13, 2014
 
 @author: Gary O'Neall
@@ -12,7 +14,7 @@ import sqlite3
 from hashlib import sha256
 from os import path
 
-DB_PATH = 'db'
+DB_PATH = path.expandvars('$LIGHTS_WEB_DATABASE')
 
 def usage():
     ''' Prints the usage to the console
