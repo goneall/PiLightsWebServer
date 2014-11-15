@@ -6,7 +6,8 @@ Created on Nov 11, 2014
 Licensed under the Apache 2.0 License
 
 Interface module for the lightshowPi
-Currently, these are just stubs used to test the web interface
+
+The environment variable $PLAYLIST_FILE must be set for the file used as a playlist
 '''
 import subprocess
 from configuration_manager import songs, set_songs
