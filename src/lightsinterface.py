@@ -18,6 +18,7 @@ lights_are_on = False
 playlist_playing = False
 initialized = False
 playing_process = None
+playlist_file = '$PLAYLIST_FILE'
 
 def getplaylist():
     current_songs = songs()
@@ -35,16 +36,18 @@ def update_playlist(updated_playlist):
     new_songs = []
     sorted(updated_playlist, key=lambda item: item.playorder)
     max_order = updated_playlist[len(updated_playlist)-1].playorder
-    for item in updated_playlist:
-        # Hack alert - I don't really understand the votes and what information we
-        # are loosing here
-        # Create a set the same size as the list size - play order
-        vote_set = set()
-        num_votes = max_order - item.playorder
-        for vote in range(0, num_votes):
-            vote_set.add(str(vote))
-        new_songs.append([item.name, item.path, vote_set])
-    set_songs(new_songs)
+    with open(path.expandvars(playlist_file), 'w') as f:
+        for item in updated_playlist:
+            # Hack alert - I don't really understand the votes and what information we
+            # are loosing here
+            # Create a set the same size as the list size - play order
+            vote_set = set()
+            num_votes = max_order - item.playorder
+            for vote in range(0, num_votes):
+                vote_set.add(str(vote))
+            new_songs.append([item.name, item.path, vote_set])
+            f.write(item.name + '\t' + item.path + '\n')
+        set_songs(new_songs)
 
 def lights_on():
     global lights_are_on, playlist_playing
@@ -70,10 +73,12 @@ def start_playlist():
     if playing_process:
         playing_process.kill()
         playing_process = None
-    args = [path.expandvars('$SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py'), '-h']
+    args = [path.expandvars('$SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py'), 
+                    '--playlist '+path.expandvars(playlist_file)]
     playing_process = subprocess.Popen(args)
     playlist_playing = True
    
+
 def stop_playlist():
     global lights_are_on, playlist_playing, playing_process
     initialize_interface()
