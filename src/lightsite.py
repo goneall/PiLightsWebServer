@@ -205,6 +205,7 @@ def add_song():
 
 def append_playlist(name, path):
     try:
+        logging.debug('Start of append')
         # get the maximum order
         cursor = g.db.execute('select max(playorder) from playlist')
         row = cursor.fetchone()
@@ -213,12 +214,13 @@ def append_playlist(name, path):
             next_playorder = row[0] + 1
         g.db.execute('insert into playlist (playorder, name, path) values (?, ?, ?)', 
                              [next_playorder, name, path])
+        logging.debug('Before interface update')
         lightsinterface.update_playlist(get_playlist_db())
         flash('Song Added')
     except Exception as ex:
-        logging.error('Error deleting song: '+str(ex))
+        logging.error('Error adding song: '+str(ex))
         g.db.rollback()
-        flash('Error deleting song')
+        flash('Error adding song')
     finally:
         g.db.commit();        
         
