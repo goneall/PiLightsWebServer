@@ -15,9 +15,7 @@ from hashlib import sha256
 from os import path
 
 DB_VAR = '$LIGHTS_WEB_DATABASE'
-print DB_VAR
 DB_PATH = path.expandvars(DB_VAR)
-print DB_VAR + ':' + DB_PATH
 
 def usage():
     ''' Pprints the usage to the console
@@ -26,7 +24,6 @@ def usage():
     print "adduser username password"
     
 if __name__ == '__main__':
-    print 'hello'
     if len(sys.argv) != 3:
         usage()
         sys.exit(1)
