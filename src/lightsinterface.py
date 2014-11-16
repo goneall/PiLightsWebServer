@@ -35,19 +35,20 @@ def getplaylist():
 
 def update_playlist(updated_playlist):
     new_songs = []
-    sorted(updated_playlist, key=lambda item: item.playorder)
-    max_order = updated_playlist[len(updated_playlist)-1].playorder
+    sorted(updated_playlist, key=lambda item: item['playorder'])
+    last_song = updated_playlist[len(updated_playlist)-1]
+    max_order = last_song['playorder']
     with open(path.expandvars(playlist_file), 'w') as f:
         for item in updated_playlist:
             # Hack alert - I don't really understand the votes and what information we
             # are loosing here
             # Create a set the same size as the list size - play order
             vote_set = set()
-            num_votes = max_order - item.playorder
+            num_votes = max_order - item['playorder']
             for vote in range(0, num_votes):
                 vote_set.add(str(vote))
-            new_songs.append([item.name, item.path, vote_set])
-            f.write(item.name + '\t' + item.path + '\n')
+            new_songs.append([item['name'], item['path'], vote_set])
+            f.write(item['name'] + '\t' + item['path'] + '\n')
         set_songs(new_songs)
 
 def lights_on():
@@ -75,7 +76,7 @@ def start_playlist():
         playing_process.kill()
         playing_process = None
     args = [path.expandvars('$SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py'), 
-                    '--playlist '+path.expandvars(playlist_file)]
+                    '--playlist='+path.expandvars(playlist_file)]
     playing_process = subprocess.Popen(args)
     playlist_playing = True
    
