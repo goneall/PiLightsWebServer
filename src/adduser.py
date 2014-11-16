@@ -16,8 +16,8 @@ from os import path
 
 DB_VAR = '$LIGHTS_WEB_DATABASE'
 print DB_VAR
-# DB_PATH = path.expandvars(DB_VAR)
-# print DB_VAR + ':' + DB_PATH
+DB_PATH = path.expandvars(DB_VAR)
+print DB_VAR + ':' + DB_PATH
 
 def usage():
     ''' Pprints the usage to the console
