@@ -25,7 +25,7 @@ def getplaylist():
     current_songs = songs()
     # Format of the songs is name, path, number of votes
     # Need to convert the number of votes into a play order
-    sorted(current_songs, key=lambda song: len(song[2]), reverse=True)
+    current_songs.sort(current_songs, key=lambda song: len(song[2]), reverse=True)
     playlist = []
     order = 1
     for song in current_songs:
@@ -35,7 +35,7 @@ def getplaylist():
 
 def update_playlist(updated_playlist):
     new_songs = []
-    sorted(updated_playlist, key=lambda item: item['playorder'])
+    updated_playlist.sort(updated_playlist, key=lambda item: item['playorder'])
     last_song = updated_playlist[len(updated_playlist)-1]
     max_order = last_song['playorder']
     with open(path.expandvars(playlist_file), 'w') as f:

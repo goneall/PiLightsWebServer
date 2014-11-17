@@ -12,6 +12,7 @@ from logging import handlers
 import logging
 import sqlite3
 import lightsinterface
+import schedules
 from os import path, listdir
 from hashlib import sha256
 from flask import Flask, render_template, g, request, flash, redirect, url_for, session
@@ -40,6 +41,8 @@ if (app.config['DEBUG']):
 else:
     file_handler.setLevel(logging.WARN)
 app.logger.addHandler(file_handler)
+
+scheduler = schedules.scheduler(app.config['DATABASE'])
 
 def connect_db():
     return sqlite3.connect(app.config['DATABASE'])
@@ -147,6 +150,7 @@ def add_schedule():
         g.db.execute('insert into schedule (day, hour, minute, turnon, turnoff, startplaylist, stopplaylist) values (?, ?, ?, ?, ?, ?, ?)',
                      [request.form['day'], hour, minutes, turnon,
                       turnoff, startplaylist, stopplaylist])
+        scheduler.schedule_updated()
         flash('Schedule updated')
     except Exception as ex:
         logging.error('Error adding new schedule record: '+str(ex))
@@ -168,6 +172,7 @@ def delete_schedule():
         message = 'Error deleting schedule record'
     finally:
         g.db.commit()
+    scheduler.schedule_updated()
     flash(message)
     return redirect(url_for('schedule'))
         
@@ -306,4 +311,5 @@ def get_playlist_db():
 
 
 if __name__ == "__main__":   
+    scheduler.run()
     app.run('0.0.0.0', port=app.config['PORT'])
