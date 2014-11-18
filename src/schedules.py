@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 '''
 Licensed under the Apache 2.0 License
 
@@ -48,9 +49,10 @@ class Scheduler(Thread):
         max_errors = 10
         last_action = None
         while errors <= max_errors:
+            print 'next action'
             next_action = self.__get_next_action()
-            if self.__time_to_execute(next_action):  # don't forget to check for null next action
-                if next_action != last_action:  # We don't want to execute the same action twice
+            if self.__time_to_execute(next_action):
+                if next_action != last_action:
                     try:
                         logging.info(self.get_action_description(next_action))
                         self.__execute_action(next_action)
@@ -59,8 +61,10 @@ class Scheduler(Thread):
                         logging.exception(ex)
                         logging.error('Error executing scheduled event')
                         errors = errors + 1
+                else:
+                    self.schedule_update_event.wait(self.FUDGE_MINUTES * 60)
             else:
-                time_to_wait = self.__time_to_action(next_action)    # Don't forget to check for null
+                time_to_wait = self.__time_to_action(next_action)
                 self.schedule_update_event.wait(time_to_wait)
  
     def __time_to_action(self, action):

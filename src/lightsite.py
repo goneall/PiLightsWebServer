@@ -42,7 +42,7 @@ else:
     file_handler.setLevel(logging.WARN)
 app.logger.addHandler(file_handler)
 
-scheduler = schedules.scheduler(app.config['DATABASE'])
+scheduler = schedules.Scheduler(app.config['DATABASE'])
 
 def connect_db():
     return sqlite3.connect(app.config['DATABASE'])
@@ -311,5 +311,5 @@ def get_playlist_db():
 
 
 if __name__ == "__main__":   
-    scheduler.run()
+    scheduler.start()
     app.run('0.0.0.0', port=app.config['PORT'])
