@@ -122,10 +122,9 @@ def updatelights():
     
 @app.route(app.config['WEB_ROUTE_SCHED'])
 def schedule():
-    cursor = g.db.execute('select id, day, hour, minute, turnon, turnoff, startplaylist, stopplaylist from schedule order by day,hour,minute')
+    cursor = g.db.execute('select id, day, hour, minute, action from schedule order by day,hour,minute')
     rows = cursor.fetchall()
-    entries = [dict(id=row[0], day=row[1], hour=row[2], minute=row[3], turnon=row[4], turnoff=row[5], 
-                    startplaylist=row[6], stopplaylist=row[7]) for row in rows]
+    entries = [dict(id=row[0], day=row[1], hour=row[2], minute=row[3], action=row[4]) for row in rows]
     return render_template('schedule.html', entries=entries)
 
 @app.route(app.config['WEB_ROUTE_SCHED']+'/add', methods=['POST'])
@@ -133,10 +132,6 @@ def add_schedule():
     try:
         # actions
         action = request.form['action']
-        turnon = action == 'turnon'
-        turnoff = action == 'turnoff'
-        startplaylist = action == 'startplaylist'
-        stopplaylist = action == 'stopplaylist'
         
         # time
         hour = int(request.form['hour'])
@@ -147,9 +142,8 @@ def add_schedule():
         if (minutes < 0 or minutes > 59):
             flash('Minutes must be greater than 0 and less than 59')
             raise Exception('Invalid minutes')
-        g.db.execute('insert into schedule (day, hour, minute, turnon, turnoff, startplaylist, stopplaylist) values (?, ?, ?, ?, ?, ?, ?)',
-                     [request.form['day'], hour, minutes, turnon,
-                      turnoff, startplaylist, stopplaylist])
+        g.db.execute('insert into schedule (day, hour, minute, action) values (?, ?, ?, ?)',
+                     [request.form['day'], hour, minutes,action])
         scheduler.schedule_updated()
         flash('Schedule updated')
     except Exception as ex:

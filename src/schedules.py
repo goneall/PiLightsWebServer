@@ -23,7 +23,6 @@ class Scheduler(Thread):
     '''
     
     FUDGE_MINUTES = timedelta(minutes=1)   # Number of minutes within the current time that we will go ahead and execute the action
-    EXECUTION_TIME = timedelta(seconds=5)  # Time to allow for processing requests - used to determine if an action is now or in the future
     def __init__(self, db_path):
         '''
         Constructor for Scheduler
@@ -47,44 +46,36 @@ class Scheduler(Thread):
         '''
         errors = 0
         max_errors = 10
-        last_action = None
         while errors <= max_errors:
-            next_action = self.__get_next_action(last_action)
-            print 'Next action='+str(next_action)
+            next_action = self.__get_next_action()
+            logging.debug('Next action='+str(next_action))
             if self.__time_to_execute(next_action):
-                if next_action != last_action:
-                    try:
-                        logging.info(self.get_action_description(next_action))
-                        print 'executing ' + self.get_action_description(next_action)
-                        self.__execute_action(next_action)
-                        last_action = next_action
-                    except Exception as ex:
-                        print 'Error: '+str(ex)
-                        logging.exception(ex)
-                        logging.error('Error executing scheduled event')
-                        errors = errors + 1
-                else:
-                    print 'Waiting fudge'
-                    self.schedule_update_event.wait(self.FUDGE_MINUTES.seconds)
-                    self.schedule_update_event.clear()
+                try:
+                    logging.info(self.get_action_description(next_action))
+                    self.__execute_action(next_action)
+                except Exception as ex:
+                    logging.error('Error executing scheduled event')
+                    logging.exception(ex)
+                    errors = errors + 1
             else:
                 time_to_wait = self.__time_to_action(next_action)
                 now = datetime.now()
-                print 'now=' +str(now) 
-                print 'waiting '+str(time_to_wait)
+                logging.debug('now=' +str(now))
+                logging.debug('waiting '+str(time_to_wait))
                 self.schedule_update_event.wait(time_to_wait)
                 self.schedule_update_event.clear()
-                print 'waited='+str(datetime.now()-now)
+                logging.debug('waited='+str(datetime.now()-now))
  
     def __time_to_action(self, action):
         '''
         Calcuate the time in seconds before the next action is to be executed
         '''
-        if action == None:	# Wait one day to roll over
+        if action == None:            # Wait one day to roll over
             return timedelta(days=1).total_seconds()
         else:
             time_to_action = action['schedtime'] - datetime.now()
             if time_to_action.seconds < 0:
+                logging.warn('Less than 0 seconds for action '+str(action))
                 return 0
             else:
                 return time_to_action.total_seconds()
@@ -93,23 +84,29 @@ class Scheduler(Thread):
         '''
         Execute the action
         '''
-        if action['turnon']:
+        if action['action'] == 'turnon':
             lightsinterface.lights_on()
-        elif action['turnoff']:
+        elif action['action'] == 'turnoff':
             lightsinterface.lights_off()
-        elif action['startplaylist']:
+        elif action['action'] == 'startplaylist':
             lightsinterface.start_playlist()
-        elif action['stopplaylist']:
+        elif action['action'] == 'stopplaylist':
             lightsinterface.stop_playlist()
+        # Update database
+        con = sqlite3.connect(self.db)
+        try:
+            con.execute('update schedule set lastaction=? where id=?', [datetime.now(), action['id']])
+        finally:
+            con.close()
            
     def get_action_description(self, action):
-        if action['turnon']:
+        if action['action'] == 'turnon':
             return 'Turn On'
-        elif action['turnoff']:
+        elif action['action'] == 'turnoff':
             return 'Turn Off'
-        elif action['startplaylist']:
+        elif action['action'] == 'startplaylist':
             return 'Start Playlist'
-        elif action['stopplaylist']:
+        elif action['action'] == 'stopplaylist':
             return 'Stop Playlist'
         else:
             return 'Unknown'
@@ -123,31 +120,40 @@ class Scheduler(Thread):
         return (datetime.now() + self.FUDGE_MINUTES) > next_action['schedtime']
         
         
-    def __get_next_action(self, last_action):
+    def __get_next_action(self):
         con = sqlite3.connect(self.db)
         try:
-            cursor = con.execute('select id, day, hour, minute, turnon, turnoff, startplaylist, stopplaylist from schedule order by day,hour,minute')
+            cursor = con.execute('select id, day, hour, minute, action, lastaction from schedule order by day,hour,minute')
             rows = cursor.fetchall()
             scheduled_actions = []
-            now = datetime.now() - self.EXECUTION_TIME
+            now = datetime.now()
             for row in rows:
                 scheduled_actions.append(dict(id=row[0], schedtime=self.__to_date(now, self.__day_to_num(row[1]), row[2], row[3]),
-                                              turnon=row[4], turnoff=row[5], startplaylist=row[6], stopplaylist=row[7]))
+                                              action=row[4], lastaction=row[5]))
             scheduled_actions = sorted(scheduled_actions, key=lambda sched: sched['schedtime'])
 
             i = 0
-            while i < len(scheduled_actions) and (scheduled_actions[i] == last_action or scheduled_actions[i]['schedtime'] < now):
+            while i < len(scheduled_actions) and (self.__executed_today(scheduled_actions[i]) or scheduled_actions[i]['schedtime'] < now):
                 i = i + 1
             if i < len(scheduled_actions):
                 return scheduled_actions[i]
             else:
-                print 'returning none'
-                print 'last_action=' +str(last_action)
-                print 'last_record=' +str(scheduled_actions[i-1])
-                print 'now=' +str(now)
+                logging.debug('returning none')
+                if (i > 0):
+                    logging.debug('last_record=' +str(scheduled_actions[i-1]))
+                else:
+                    logging.debug('Empty schedule')
+                logging.debug('now=' +str(now))
                 return None
         finally:
             con.close()
+            
+    def __executed_today(self, action):
+        now_date = datetime.now()
+        lastaction = action['lastaction']
+        if action == None:
+            return False
+        return lastaction.year == now_date.year and lastaction.month == now_date.month and lastaction.day == now_date.day
      
     def __day_to_num(self, day_str):
         day_lower = day_str.strip().lower()

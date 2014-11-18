@@ -4,10 +4,8 @@ create table schedule (
     day integer,
     hour integer,
     minute integer,
-    turnon boolean,
-    turnoff boolean,
-    startplaylist boolean,
-    stopplaylist boolean
+    action varchar(64),
+    lastaction timestamp
 );
 drop table if exists playlist;
 create table playlist (

@@ -15,10 +15,10 @@
             <td>{{ entry.day }}</td>
             <td>{{ entry.hour }}:{{ entry.minute }}</td>
             <td>
-                {% if entry.turnon %}Lights On{% endif %}
-                {% if entry.turnoff %}Lights Off{% endif %}
-                {% if entry.startplaylist %}Play Music{% endif %}
-                {% if entry.stopplaylist %}Stop Music{% endif %}
+                {% if entry.action isequalto "turnon" %}Lights On{% endif %}
+                {% if entry.action isequalto "turnoff" %}Lights Off{% endif %}
+                {% if entry.action isequalto "startplaylist" %}Play Music{% endif %}
+                {% if entry.action isequalto "stopplaylist" %}Stop Music{% endif %}
             </td>
             {% if session.logged_in %}
                 <td><button type=submit value={{ entry.id }} name="delete_entry">Del.</button></td>
