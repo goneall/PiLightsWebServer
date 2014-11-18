@@ -311,5 +311,6 @@ def get_playlist_db():
 
 
 if __name__ == "__main__":   
-    scheduler.start()
+    if not scheduler.is_alive():
+        scheduler.start()
     app.run('0.0.0.0', port=app.config['PORT'])

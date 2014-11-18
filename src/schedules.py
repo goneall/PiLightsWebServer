@@ -45,16 +45,18 @@ class Scheduler(Thread):
         Main run method for the Thread.  Performs the next scheduled action at
         the designated time.
         '''
+        print 'starting run'
         errors = 0
         max_errors = 10
         last_action = None
         while errors <= max_errors:
-            print 'next action'
-            next_action = self.__get_next_action()
+            print 'getting next action'
+            next_action = self.__get_next_action(last_action)
             if self.__time_to_execute(next_action):
                 if next_action != last_action:
                     try:
                         logging.info(self.get_action_description(next_action))
+                        print self.get_action_description(next_action)
                         self.__execute_action(next_action)
                         last_action = next_action
                     except Exception as ex:
@@ -62,10 +64,14 @@ class Scheduler(Thread):
                         logging.error('Error executing scheduled event')
                         errors = errors + 1
                 else:
-                    self.schedule_update_event.wait(self.FUDGE_MINUTES * 60)
+                    print 'waiting fudge minutes'
+                    self.schedule_update_event.wait(self.FUDGE_MINUTES.seconds)
+                    self.schedule_update_event.clear()
             else:
                 time_to_wait = self.__time_to_action(next_action)
+                print 'waiting '+str(time_to_wait)
                 self.schedule_update_event.wait(time_to_wait)
+                self.schedule_update_event.clear()
  
     def __time_to_action(self, action):
         '''
@@ -114,7 +120,7 @@ class Scheduler(Thread):
         return (datetime.now() + self.FUDGE_MINUTES) > next_action['schedtime']
         
         
-    def __get_next_action(self):
+    def __get_next_action(self, last_action):
         con = sqlite3.connect(self.db)
         try:
             cursor = con.execute('select id, day, hour, minute, turnon, turnoff, startplaylist, stopplaylist from schedule order by day,hour,minute')
@@ -127,7 +133,7 @@ class Scheduler(Thread):
             scheduled_actions = sorted(scheduled_actions, key=lambda sched: sched['schedtime'])
 
             i = 0
-            while i < len(scheduled_actions) and scheduled_actions[i]['schedtime'] < now:
+            while i < len(scheduled_actions) and (scheduled_actions[i] == last_action or scheduled_actions[i]['schedtime'] < now):
                 i = i + 1
             if i < len(scheduled_actions):
                 return scheduled_actions[i]
@@ -178,7 +184,7 @@ if __name__ == "__main__":
         exit(1)
     scheduler = Scheduler(dbpath)
     print 'Starting scheduler.  Press enter to have the notify the scheduler of any updates.  Enter STOP to exit'
-    scheduler.run()
+    scheduler.start()
     cmd = raw_input("Enter to update scheduler or STOP to end:")
     while cmd.strip() != 'STOP':
         cmd = raw_input("Enter to update scheduler or STOP to end:")
