@@ -22,8 +22,8 @@ class Scheduler(Thread):
     Main class for managing the schedule for the lights
     '''
     
-    FUDGE_MINUTES = timedelta(minutes=3)   # Number of minutes within the current time that we will go ahead and execute the action
-
+    FUDGE_MINUTES = timedelta(minutes=1)   # Number of minutes within the current time that we will go ahead and execute the action
+    EXECUTION_TIME = timedelta(seconds=5)  # Time to allow for processing requests - used to determine if an action is now or in the future
     def __init__(self, db_path):
         '''
         Constructor for Scheduler
@@ -45,46 +45,49 @@ class Scheduler(Thread):
         Main run method for the Thread.  Performs the next scheduled action at
         the designated time.
         '''
-        print 'starting run'
         errors = 0
         max_errors = 10
         last_action = None
         while errors <= max_errors:
-            print 'getting next action'
             next_action = self.__get_next_action(last_action)
+            print 'Next action='+str(next_action)
             if self.__time_to_execute(next_action):
                 if next_action != last_action:
                     try:
                         logging.info(self.get_action_description(next_action))
-                        print self.get_action_description(next_action)
+                        print 'executing ' + self.get_action_description(next_action)
                         self.__execute_action(next_action)
                         last_action = next_action
                     except Exception as ex:
+                        print 'Error: '+str(ex)
                         logging.exception(ex)
                         logging.error('Error executing scheduled event')
                         errors = errors + 1
                 else:
-                    print 'waiting fudge minutes'
+                    print 'Waiting fudge'
                     self.schedule_update_event.wait(self.FUDGE_MINUTES.seconds)
                     self.schedule_update_event.clear()
             else:
                 time_to_wait = self.__time_to_action(next_action)
+                now = datetime.now()
+                print 'now=' +str(now) 
                 print 'waiting '+str(time_to_wait)
                 self.schedule_update_event.wait(time_to_wait)
                 self.schedule_update_event.clear()
+                print 'waited='+str(datetime.now()-now)
  
     def __time_to_action(self, action):
         '''
         Calcuate the time in seconds before the next action is to be executed
         '''
-        if action == None:
-            return timedelta.max.seconds
+        if action == None:	# Wait one day to roll over
+            return timedelta(days=1).total_seconds()
         else:
             time_to_action = action['schedtime'] - datetime.now()
             if time_to_action.seconds < 0:
                 return 0
             else:
-                return time_to_action.seconds
+                return time_to_action.total_seconds()
         
     def __execute_action(self, action):
         '''
@@ -126,7 +129,7 @@ class Scheduler(Thread):
             cursor = con.execute('select id, day, hour, minute, turnon, turnoff, startplaylist, stopplaylist from schedule order by day,hour,minute')
             rows = cursor.fetchall()
             scheduled_actions = []
-            now = datetime.now()
+            now = datetime.now() - self.EXECUTION_TIME
             for row in rows:
                 scheduled_actions.append(dict(id=row[0], schedtime=self.__to_date(now, self.__day_to_num(row[1]), row[2], row[3]),
                                               turnon=row[4], turnoff=row[5], startplaylist=row[6], stopplaylist=row[7]))
@@ -138,6 +141,10 @@ class Scheduler(Thread):
             if i < len(scheduled_actions):
                 return scheduled_actions[i]
             else:
+                print 'returning none'
+                print 'last_action=' +str(last_action)
+                print 'last_record=' +str(scheduled_actions[i-1])
+                print 'now=' +str(now)
                 return None
         finally:
             con.close()
