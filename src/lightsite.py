@@ -37,15 +37,17 @@ app.debug=app.config['DEBUG']
 # Enable logging
 file_handler = handlers.RotatingFileHandler(app.config['LOGFILE_NAME'])
 if (app.config['DEBUG']):
+    logging.basicConfig(filename=app.config['LOGFILE_NAME'],level=logging.DEBUG)
     file_handler.setLevel(logging.DEBUG)
 else:
+    logging.basicConfig(filename=app.config['LOGFILE_NAME'],level=logging.WARN)
     file_handler.setLevel(logging.WARN)
 app.logger.addHandler(file_handler)
 
 scheduler = schedules.Scheduler(app.config['DATABASE'])
 
 def connect_db():
-    return sqlite3.connect(app.config['DATABASE'])
+    return sqlite3.connect(app.config['DATABASE'], detect_types=sqlite3.PARSE_DECLTYPES)
 
 def init_db():
     with closing(connect_db()) as db:
@@ -305,6 +307,8 @@ def get_playlist_db():
 
 
 if __name__ == "__main__":   
+    if not path.isfile(app.config['DATABASE']):
+        init_db()
     if not scheduler.is_alive():
         scheduler.start()
     app.run('0.0.0.0', port=app.config['PORT'])

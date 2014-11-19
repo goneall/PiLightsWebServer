@@ -70,7 +70,7 @@ class Scheduler(Thread):
         '''
         Calcuate the time in seconds before the next action is to be executed
         '''
-        if action == None:            # Wait one day to roll over
+        if action == None:            # Wait one day to roll over
             return timedelta(days=1).total_seconds()
         else:
             time_to_action = action['schedtime'] - datetime.now()
@@ -95,7 +95,22 @@ class Scheduler(Thread):
         # Update database
         con = sqlite3.connect(self.db)
         try:
-            con.execute('update schedule set lastaction=? where id=?', [datetime.now(), action['id']])
+            id = action['id']
+            now = datetime.now()
+            logging.debug('Updating the set schedule for id '+str(id))
+            con.execute('update schedule set lastaction=? where id=?', [now, id])
+            con.commit()
+            cursor = con.execute('select lastaction from schedule where id=?', [id])
+            rows = cursor.fetchall()
+            if len(rows) == 0:
+                logging.error('Update of lastaction failed - no rows')
+            else:
+                logging.debug('Updated datetime = '+str(rows[0][0]))
+        except Exception as ex:
+            logging.error('Error updated last action')
+            logging.exception(ex)
+            con.rollback()
+            con.commit()
         finally:
             con.close()
            
@@ -121,9 +136,9 @@ class Scheduler(Thread):
         
         
     def __get_next_action(self):
-        con = sqlite3.connect(self.db)
+        con = sqlite3.connect(self.db, detect_types=sqlite3.PARSE_DECLTYPES)
         try:
-            cursor = con.execute('select id, day, hour, minute, action, lastaction from schedule order by day,hour,minute')
+            cursor = con.execute('select id, day, hour, minute, action, lastaction as "[timestamp]" from schedule order by day,hour,minute')
             rows = cursor.fetchall()
             scheduled_actions = []
             now = datetime.now()
@@ -133,7 +148,7 @@ class Scheduler(Thread):
             scheduled_actions = sorted(scheduled_actions, key=lambda sched: sched['schedtime'])
 
             i = 0
-            while i < len(scheduled_actions) and (self.__executed_today(scheduled_actions[i]) or scheduled_actions[i]['schedtime'] < now):
+            while i < len(scheduled_actions) and (self.__executed_today(scheduled_actions[i]) or (scheduled_actions[i]['schedtime'] + self.FUDGE_MINUTES) < now):
                 i = i + 1
             if i < len(scheduled_actions):
                 return scheduled_actions[i]
@@ -151,8 +166,10 @@ class Scheduler(Thread):
     def __executed_today(self, action):
         now_date = datetime.now()
         lastaction = action['lastaction']
-        if action == None:
+        if lastaction == None:
             return False
+        if not isinstance(lastaction, datetime):
+            lastaction = datetime.strptime(lastaction, 'YYYY-MM-DDTHH.MM.SS.mmmmmm')
         return lastaction.year == now_date.year and lastaction.month == now_date.month and lastaction.day == now_date.day
      
     def __day_to_num(self, day_str):
