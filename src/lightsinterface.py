@@ -10,6 +10,7 @@ Interface module for the lightshowPi
 The environment variable $PLAYLIST_FILE must be set for the file used as a playlist
 '''
 import subprocess
+import logging
 from configuration_manager import songs, set_songs
 from hardware_controller import turn_on_lights, turn_off_lights, initialize, clean_up
 from os import path
@@ -34,10 +35,12 @@ def getplaylist():
     return playlist
 
 def update_playlist(updated_playlist):
+    logging.debug('Updating playlist: '+str(updated_playlist))
     new_songs = []
     updated_playlist.sort(updated_playlist, key=lambda item: item['playorder'])
     last_song = updated_playlist[len(updated_playlist)-1]
     max_order = last_song['playorder']
+    logging.debug('Sorted Playlist: '+str(updated_playlist))
     with open(path.expandvars(playlist_file), 'w') as f:
         for item in updated_playlist:
             # Hack alert - I don't really understand the votes and what information we
@@ -49,6 +52,7 @@ def update_playlist(updated_playlist):
                 vote_set.add(str(vote))
             new_songs.append([item['name'], item['path'], vote_set])
             f.write(item['name'] + '\t' + item['path'] + '\n')
+        logging.debug('Writing new songs')
         set_songs(new_songs)
 
 def lights_on():
