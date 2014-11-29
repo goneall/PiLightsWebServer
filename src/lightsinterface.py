@@ -11,6 +11,7 @@ The environment variable $PLAYLIST_FILE must be set for the file used as a playl
 '''
 import subprocess
 import logging
+import inspect
 from configuration_manager import songs, set_songs
 from hardware_controller import turn_on_lights, turn_off_lights, initialize, clean_up
 from os import path
@@ -80,7 +81,8 @@ def start_playlist():
     if playing_process:
         playing_process.kill()
         playing_process = None
-    args = [path.expandvars('./playAllPlaylist.sh'), 
+    script_dir = path.dirname(path.abspath(inspect.getfile(inspect.currentframe())))
+    args = [script_dir + './playAllPlaylist.sh', 
                     '--playlist='+path.expandvars(playlist_file)]
     playing_process = subprocess.Popen(args)
     playlist_playing = True
