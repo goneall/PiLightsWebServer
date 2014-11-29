@@ -82,7 +82,7 @@ def start_playlist():
         playing_process.kill()
         playing_process = None
     script_dir = path.dirname(path.abspath(inspect.getfile(inspect.currentframe())))
-    script_path = script_dir + './playAllPlaylist.sh'
+    script_path = script_dir + '/playAllPlaylist.sh'
     logging.debug('Executing script: '+script_path)
     args = [script_path, '--playlist='+path.expandvars(playlist_file)]
     playing_process = subprocess.Popen(args)
@@ -96,6 +96,7 @@ def stop_playlist():
         lights_off()
     if playing_process:
         playing_process.kill()
+        playing_process = None
     playlist_playing = False
         
 def initialize_interface():
