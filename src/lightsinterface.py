@@ -95,6 +95,7 @@ def stop_playlist():
     if lights_are_on:
         lights_off()
     if playing_process:
+        playing_process.terminate()
         playing_process.kill()
         playing_process = None
     playlist_playing = False
