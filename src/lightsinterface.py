@@ -80,7 +80,7 @@ def start_playlist():
     if playing_process:
         playing_process.kill()
         playing_process = None
-    args = [path.expandvars('$SYNCHRONIZED_LIGHTS_HOME/py/synchronized_lights.py'), 
+    args = [path.expandvars('./playAllPlaylist.sh'), 
                     '--playlist='+path.expandvars(playlist_file)]
     playing_process = subprocess.Popen(args)
     playlist_playing = True
