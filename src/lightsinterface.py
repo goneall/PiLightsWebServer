@@ -38,10 +38,13 @@ def getplaylist():
 def update_playlist(updated_playlist):
     logging.debug('Updating playlist: '+str(updated_playlist))
     new_songs = []
-    updated_playlist.sort(updated_playlist, key=lambda item: item['playorder'])    
+    updated_playlist.sort(key=lambda item: item['playorder'])    
     logging.debug('Sorted Playlist: '+str(updated_playlist))
-    last_song = updated_playlist[len(updated_playlist)-1]
-    max_order = last_song['playorder']
+    if len(updated_playlist) > 0:
+        last_song = updated_playlist[len(updated_playlist)-1]
+        max_order = last_song['playorder']
+    else:
+        max_order = 0
     logging.debug('Max order: '+str(max_order))
     with open(path.expandvars(playlist_file), 'w') as f:
         for item in updated_playlist:
