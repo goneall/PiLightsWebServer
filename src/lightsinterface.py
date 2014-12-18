@@ -97,6 +97,7 @@ def stop_playlist():
     if playing_process:
         playing_process.terminate()
         playing_process.kill()
+        playing_process.wait()
         playing_process = None
     playlist_playing = False
         
